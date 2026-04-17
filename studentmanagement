@@ -1,0 +1,172 @@
+App.js
+const express = require("express");
+const mysql = require("mysql");
+const bodyParser = require("body-parser");
+const path = require("path");
+console.log("FOLDER:", __dirname);
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
+const db = mysql.createConnection({
+    host: "127.0.0.1",
+    user: "root",
+    password: "Diva@2004",
+    database: "studentDB"
+});
+db.connect((err) => {
+    if (err) {
+        console.log("Connection Failed:", err);
+    } else {
+        console.log(" MySQL Connected...");
+    }
+});
+// ===== HOME ======
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+// ====== VIEW PAGE =======
+app.get("/view", (req, res) => {
+    res.sendFile(__dirname + "/view.html");
+});
+// ===== FETCH DATA (for view.html) ======
+app.get("/data", (req, res) => {
+    db.query("SELECT * FROM student_info", (err, result) => {
+        if (err) throw err;
+        res.json(result);
+    });
+});
+//===== ADD ====
+app.post("/add", (req, res) => {
+    const { name, email, age } = req.body;
+    db.query(
+        "INSERT INTO student_info (name, email, age) VALUES (?, ?, ?)",
+        [name, email, age],
+        (err) => {
+            if (err) throw err;
+            res.redirect("/");
+        }
+    );
+});
+// ==== DELETE ======
+app.post("/delete", (req, res) => {
+    db.query(
+        "DELETE FROM student_info WHERE id=?",
+        [req.body.id],
+        (err) => {
+            if (err) throw err;
+            res.redirect("/");
+        }
+    );
+});
+// ====== UPDATE ======
+app.post("/update", (req, res) => {
+    const { id, name, email, age } = req.body;
+    db.query(
+        "UPDATE student_info SET name=?, email=?, age=? WHERE id=?",
+        [name, email, age, id],
+        (err) => {
+            if (err) throw err;
+            res.redirect("/");
+        }
+    );
+});
+// ======= SERVER =======
+app.listen(3000, () => {
+    console.log("🚀 Server running at http://localhost:3000");
+});
+Index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student CRUD System</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right, #74ebd5, #9face6);
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 20px;
+            color: black;
+        }
+        .container {
+            width: 90%;
+            margin: auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: left;
+            gap: 60px;
+            margin-top: 30px;
+        }
+        .card {
+            width: 200px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.3);
+        }
+        input {
+            width: 80%;
+            padding: 6px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .add { background: green; }
+        .view { background: blue; }
+        .delete { background: red; }
+        .update { background: orange; }
+        button:hover {
+            opacity: 0.8;
+        }
+</style>
+</head>
+<body>
+<h1>Student CRUD System</h1>
+<div class="container">
+<div class="card">
+        <h3>Add Student</h3>
+        <form action="/add" method="POST">
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="number" name="age" placeholder="Age" required>
+    <button class="add">Add</button>
+    </form>
+    </div>
+    <div class="card">
+    <h3>View Students</h3>
+     <a href="/view">
+            <button class="view">View All</button>
+        </a>
+    </div>
+    <div class="card">
+        <h3>Delete Student</h3>
+        <form action="/delete" method="POST">
+            <input type="number" name="id" placeholder="ID" required>
+            <button class="delete">Delete</button>
+        </form>
+    </div>
+    <div class="card">
+        <h3>Update Student</h3>
+        <form action="/update" method="POST">
+            <input type="number" name="id" placeholder="ID" required>
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="number" name="age" placeholder="Age" required>
+            <button class="update">Update</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
